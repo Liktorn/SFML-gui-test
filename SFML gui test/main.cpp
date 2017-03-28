@@ -5,6 +5,9 @@
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
 
+#include <iostream>
+
+
 int main()
 {
 	sf::RenderWindow window(sf::VideoMode(640, 480), "");
@@ -22,6 +25,12 @@ int main()
 	window.setTitle(windowTitle);
 	window.resetGLStates(); // call it if you only draw ImGui. Otherwise not needed.
 	sf::Clock deltaClock;
+
+
+	bool show_another_window = false;
+	ImVec4 clear_color = ImColor(114, 144, 154);
+
+
 	while (window.isOpen()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
@@ -45,6 +54,11 @@ int main()
 			bgColor.b = static_cast<sf::Uint8>(color[2] * 255.f);
 		}
 
+		if (ImGui::Button("a button", ImVec2(50, 50)))
+		{
+			std::cout << "you pressed the button" << std::endl;
+		}
+
 		// Window title text edit
 		ImGui::InputText("Window title", windowTitle, 255);
 
@@ -54,7 +68,27 @@ int main()
 			// but I do this to show how buttons work :)
 			window.setTitle(windowTitle);
 		}
+		
+		ImGui::ShowTestWindow();
+		ImGui::Begin("test");
+		static float f = 0.0f;
+		ImGui::Text("Hello, world!");
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+		ImGui::ColorEdit3("clear color", (float*)&clear_color);
+		//if (ImGui::Button("Test Window")) show_test_window ^= 1;
+		if (ImGui::Button("Another Window")) show_another_window ^= 1;
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		ImGui::End(); // end window
+
+		if (show_another_window)
+		{
+			ImGui::SetNextWindowSize(ImVec2(200, 100), ImGuiSetCond_FirstUseEver);
+			ImGui::SetNextWindowPos(ImVec2(200, 200));
+			ImGui::Begin("Another Window", &show_another_window);
+			ImGui::Text("Hello");
+			ImGui::End();
+		}
+		
 
 		window.clear(bgColor); // fill background with color
 		ImGui::Render();
