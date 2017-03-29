@@ -2,11 +2,11 @@
 
 
 
-Enviroment::Enviroment()
-{
-}
+//Enviroment::Enviroment()
+//{
+//}
 
 
-Enviroment::~Enviroment()
-{
-}
+//Enviroment::~Enviroment()
+//{
+//}

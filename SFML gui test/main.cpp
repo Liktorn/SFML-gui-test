@@ -1,6 +1,7 @@
 #include "imgui.h"
 #include "imgui-sfml.h"
 
+
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Event.hpp>
@@ -11,7 +12,11 @@
 #include <vector>
 
 #include "header.h"
-
+#include "Enviroment.h"
+#include "StandardRuin.h"
+#include "IndustriRuin.h"
+#include "Humanoider.h"
+#include "Monster.h"
 
 #define ARRAY_SIZE(array) (sizeof((array))/sizeof((array[0])))
 
@@ -23,7 +28,9 @@ bool sektor_rota = false;
 bool sektor_hot = false;
 bool sektor_random_hot = false;
 bool sektor_hot_i_zonen = false;
-bool humanoider = false;
+bool is_humanoider = false;
+bool is_monster = false;
+bool is_fenomen = false;
 
 // Om det skall finnas hot, ruiner och artefakter i zonen
 bool ruin_standard = false;
@@ -35,76 +42,14 @@ int randHot = 0;
 int randArtefakt = 0;
 
 
-// Sätter miljö alternativen
-std::string miljoStr[]{ u8"11-12\tTät skog" , u8"13-15\tBusklandskap", u8"16-21\tTräsk", u8"22-24\tDöd skog"
-	, u8"25-26\tAsköken", u8"31   \tEnorm krater", u8"32   \tFält av glas", u8"33-35\tÖvervuxna ruiner"
-	, u8"36-42\tSöndervittrade ruiner", u8"43-51\tFörfallna ruiner", u8"52-56\tVälbevarade ruiner"
-	, u8"61-64\tÖde industrilandskap", u8"65-66\tBosättning" };
-static int miljoValue = 0;
 
-// sätter standard ruin alternativen
-std::string ruinStandardStr[]{
-	u8"11. Affärsgalleria"
-	, u8"12. Badhus"
-	, u8"13. Bensinstation"
-	, u8"14. Biograf"
-	, u8"15. Bostadsområde"
-	, u8"16. Busstation"
-	, u8"21. Flygplansvrak"
-	, u8"22. Förvildad park"
-	, u8"23. Höghusruin"
-	, u8"24. Jaktaffär"
-	, u8"25. Kontorskomplex"
-	, u8"26. Krater"
-	, u8"31. Kråkslott"
-	, u8"32. Kyrka"
-	, u8"33. Lekplats"
-	, u8"34. Miljonprogram"
-	, u8"35. Motorväg"
-	, u8"36. Museum"
-	, u8"41. Nöjesfält"
-	, u8"42. Parkeringshus"
-	, u8"43. Polisstation"
-	, u8"44. Radiostation"
-	, u8"45. Raserad bro"
-	, u8"46. Skyddsrum"
-	, u8"51. Slagfält"
-	, u8"52. Snabbmatsrestaurang"
-	, u8"53. Sporthall"
-	, u8"54. Sjukhus"
-	, u8"55. Stridsvagn"
-	, u8"56. Teater"
-	, u8"61. Tunnelbana"
-	, u8"62. Tågstation"
-	, u8"63. Snabbköp"
-	, u8"64. Vägtunnel"
-	, u8"65. Övergiven skola"
-	, u8"66. Ödelagd marina"
-};
-static int ruinStandardValue = 0;
 
-// sätter industriruin alternativen
-std::string ruinIndustriStr[]{
-	u8"11-13.\tFabrik"
-	, u8"14-16.\tFartygsvrak"
-	, u8"21-23.\tKraftledning"
-	, u8"24-26.\tMilitärbas"
-	, u8"31-33.\tPipeline"
-	, u8"34-36.\tRadiomast"
-	, u8"41-43.\tRaffinaderi"
-	, u8"44-46.\tReningsverk"
-	, u8"51-53.\tSkjutbana"
-	, u8"54-56.\tSoptipp"
-	, u8"61-63.\tVindkraftverk"
-	, u8"64-66.\tOljecistern"
-};
-static int ruinIndustriValue = 0;
 
 // sätter Rötnivå
 std::string rotStr[]{
-	u8"1.\  t0 röt-oas. RP tar inga rötpoäng."
-	, u8"2-5.\t1 typisk zonsektor. RP tar en rötpoäng varje dygn."
-	, u8"6.  \t2 extra rötdrabbad sektor. En rötpoäng per timme."
+	u8"0 röt-oas. RP tar inga rötpoäng."
+	, u8"1 typisk zonsektor. RP tar en rötpoäng varje dygn."
+	, u8"2 extra rötdrabbad sektor. En rötpoäng per timme."
 };
 static int rotValue = 0;
 
@@ -128,13 +73,16 @@ std::string hotIZonenStr[]{
 	, u8"3 - 5. Monster"
 	, u8"6. Fenomen"
 };
-static int hotIZonenValue = 0;
+static int hotIZonenValue = -1;
 
-// hot i zonen - humanoider
-std::string humanoiderStr[]{
-	u8""
-};
-static int humanoiderValue = 0;
+
+// sätter up strängklasserna
+bw::Enviroment miljo;
+bw::StandardRuin stdRuin;
+bw::IndustriRuin indRuin;
+bw::Humanoider humanoider;
+bw::Monster monster;
+
 int main()
 {
 	static int HEIGHT = 600;
@@ -183,25 +131,30 @@ int main()
 		/*skapa_sektor = false;
 		sektor_hot_i_zonen = true;*/
 
+
+
 		if (skapa_sektor)
 			inledning();
 		else if (sektor_miljo)
 			sektorMiljo();
 		else if (sektor_ruin)
 			sektorRuin();
-		else if (sektor_rota)
+		else if (hot && sektor_rota)
 			rot();
-		else if (sektor_hot)
+		else if (hot && sektor_hot)
 			hotMeny();
-		else if (sektor_random_hot)
+		else if (hot && sektor_random_hot)
 			randomHot();
-		else if (sektor_hot_i_zonen)
+		else if (hot && sektor_hot_i_zonen)
 			hotIZonen();
+		else if (is_humanoider)
+			hotHumanoid();
+		else if (is_monster)
+			hotMOnster();
+		else if (is_fenomen)
+			hotFenomen();
 
 
-
-		
-	
 		ImGui::End(); // end window
 
 
@@ -230,7 +183,32 @@ int main()
 	ImGui::SFML::Shutdown();
 }
 
-
+int diceRoll(int dice)
+{
+	if(dice == 1)
+	{
+		int temp = rand() % 6 + 1;
+		return temp;
+	}
+	else if (dice == 2)
+	{
+		int temp = rand() % 6 + 1;
+		temp *= 10;
+		temp += rand() % 6 + 1;
+		return temp;
+	}
+	else if (dice == 3)
+	{
+		int temp = rand() % 6 + 1;
+		temp *= 10;
+		temp += rand() % 6 + 1;
+		temp *= 10;
+		temp += rand() % 6 + 1;
+		return temp;
+	}
+	else return -1;
+}
+///////////////////////////////////	 INLEDNING		 /////////////////////////////
 void inledning()
 {
 	ImGui::TextWrapped(u8"SKAPA SEKTOR"
@@ -252,22 +230,30 @@ void inledning()
 		sektor_miljo = true;
 	}; 
 }
+///////////////////////////////////	 MILJÖ	/////////////////////////////
 void sektorMiljo()
 {
 	ImGui::TextWrapped(u8"SEKTORMILJÖ\n"
 		"Börja med att etablera den allmänna miljön\n"
 		"i sektorn.Slå T66 eller välj : ");
 
-	int size = ARRAY_SIZE(miljoStr);
+	int size = ARRAY_SIZE(miljo.text);
 	for (int i = 0; i < size; i++)
-		ImGui::RadioButton(&miljoStr[i][0], &miljoValue, i);
+		ImGui::RadioButton(&miljo.text[i][0], &miljo.value, i);
 
 	ImGui::TextWrapped(u8"\nVälj en av ovan eller slumpa med hjälp av knappen."
 		"\nTryck på fortsätt för att gå vidare");
 	// SLUMPA KNAPP
 	if (ImGui::Button(u8"Slumpa värde", ImVec2(100, 30)))
 	{
-		miljoValue = rand() % size;
+		int temp = diceRoll(2);
+		std::cout << temp << std::endl;
+		for (int i = 0; i < size; i++)
+		{
+			if (miljo.range[0][i] <= temp && miljo.range[1][i] >= temp)
+				miljo.value = i;
+		}
+
 	}; ImGui::SameLine();
 	// NÄSTA KNAPP
 	if (ImGui::Button(u8"Fortsätt", ImVec2(100, 30)))
@@ -286,37 +272,38 @@ void sektorMiljo()
 
 	}
 	ImGui::Text(u8"Vald miljö är: ");
-	ImGui::SameLine(); ImGui::Text(&miljoStr[miljoValue][0]);
+	ImGui::SameLine(); ImGui::Text(&miljo.text[miljo.value][0]);
 
 	// kollar om det skall finnas hot, ruiner och artefakter
-	if (miljoValue >= 0 && miljoValue <= 6 || miljoValue == 12)
+	if (miljo.value >= 0 && miljo.value <= 6 || miljo.value == 12)
 	{
 		ruin_industri = false;
 		ruin_standard = false;
 	}
-	else if (miljoValue <= 11 && miljoValue != 12)
+	else if (miljo.value <= 11 && miljo.value != 12)
 	{
-		if (miljoValue >= 7 && miljoValue <= 10)
+		if (miljo.value >= 7 && miljo.value <= 10)
 		{
 			ruin_industri = false;
 			ruin_standard = true;
 		}
-		else if (miljoValue == 11)
+		else if (miljo.value == 11)
 		{
 			ruin_industri = true;
 			ruin_standard = false;
 		}
 	}
-	if (miljoValue < 12)
+	if (miljo.value < 12)
 		hot = true;
 	else
 		hot = false;
-	if (miljoValue <= 6 || miljoValue == 12)
+	if (miljo.value <= 6 || miljo.value == 12)
 		artefakt = false;
 	else
 		artefakt = true;
 
 }
+///////////////////////////////////	 RUIN	 /////////////////////////////
 void sektorRuin()
 {
 	ImGui::TextWrapped(u8"RUINER\n"
@@ -324,19 +311,19 @@ void sektorRuin()
 		"är nästa steg att avgöra vilken ruin som dominerar sektorn.Det finns "
 		"förstås mer än en ruin i varje sektor, men	den utvalda ruinen är den som väcker "
 		"RP : s intresse.");
-	if (ruin_industri)
+	if (ruin_standard)
 	{
-		int size = ARRAY_SIZE(ruinIndustriStr);
+		int size = ARRAY_SIZE(stdRuin.text);
 
 		for (int i = 0; i < size; i++)
-			ImGui::RadioButton(&ruinIndustriStr[i][0], &ruinIndustriValue, i);
+			ImGui::RadioButton(&stdRuin.text[i][0], &stdRuin.value, i);
 
 		ImGui::TextWrapped(u8"\nVälj en av ovan eller slumpa med hjälp av knappen."
 			"\nTryck på fortsätt för att gå vidare");
 		// SLUMPA KNAPP
 		if (ImGui::Button(u8"Slumpa värde", ImVec2(100, 30)))
 		{
-			ruinIndustriValue = rand() % size;
+			stdRuin.value = rand() % size;
 		}; ImGui::SameLine();
 		// NÄSTA KNAPP
 		if (ImGui::Button(u8"Fortsätt", ImVec2(100, 30)))
@@ -346,18 +333,25 @@ void sektorRuin()
 			rot();
 		}
 		ImGui::Text(u8"Vald ruin är: ");
-		ImGui::SameLine(); ImGui::Text(&ruinIndustriStr[ruinIndustriValue][0]);
+		ImGui::SameLine(); ImGui::Text(&stdRuin.text[stdRuin.value][0]);
 	}
-	else if (ruin_standard)
+	else if (ruin_industri)
 	{
-		int size = ARRAY_SIZE(ruinStandardStr);
+		int size = ARRAY_SIZE(indRuin.text);
 
 		for (int i = 0; i < size; i++)
-			ImGui::RadioButton(&ruinStandardStr[i][0], &ruinStandardValue, i);
+			ImGui::RadioButton(&indRuin.text[i][0], &indRuin.value, i);
 		// SLUMPA KNAPP
 		if (ImGui::Button(u8"Slumpa värde", ImVec2(100, 30)))
 		{
-			ruinStandardValue = rand() % size;
+			int temp = diceRoll(2);
+			std::cout << temp << std::endl;
+			for (int i = 0; i < size; i++)
+			{
+				if (indRuin.range[0][i] <= temp && indRuin.range[1][i] >= temp)
+					indRuin.value = i;
+			}
+
 		}; ImGui::SameLine();
 		// NÄSTA KNAPP
 		if (ImGui::Button(u8"Fortsätt", ImVec2(100, 30)))
@@ -367,11 +361,11 @@ void sektorRuin()
 			rot();
 		}
 		ImGui::Text(u8"Vald ruin är: ");
-		ImGui::SameLine(); ImGui::Text(&ruinStandardStr[ruinStandardValue][0]);
+		ImGui::SameLine(); ImGui::Text(&indRuin.text[indRuin.value][0]);
 	}
 	
 }
-
+///////////////////////////////////	 RÖTA	 /////////////////////////////
 void rot()
 {
 	ImGui::TextWrapped(u8"RÖTNIVÅ\n"
@@ -406,7 +400,7 @@ void rot()
 	ImGui::Text(u8"Vald röta är: ");
 	ImGui::SameLine(); ImGui::Text(&rotStr[rotValue][0]);
 }
-
+///////////////////////////////////	 HOT		 /////////////////////////////
 void hotMeny()
 {
 	ImGui::TextWrapped(u8"Nästa steg är att bestämma hotnivån.\n"
@@ -437,6 +431,7 @@ void hotMeny()
 	ImGui::Text(u8"Vald hotnivå är: ");
 	ImGui::SameLine(); ImGui::Text(&hotNiva[hotValue][0]);
 }
+///////////////////////////////////	 SLUMPA HOT 	 /////////////////////////////
 void randomHot()
 {
 	ImGui::TextWrapped(u8"När rollpersonerna går in i sektorn rullar du ett antal grundtärningar lika "
@@ -492,7 +487,7 @@ void randomHot()
 	else
 		ImGui::Text(u8"Antal artefakter är: %d", randArtefakt);
 }
-
+///////////////////////////////////	 HOT I ZONEN    	 /////////////////////////////
 void hotIZonen()
 {
 	ImGui::TextWrapped(u8"Hot i Zonen tar sig tre olika former : "
@@ -521,4 +516,89 @@ void hotIZonen()
 		hotIZonen();
 
 	}
+	if (hotIZonenValue == 0)
+	{
+		is_humanoider = true;
+		is_monster = false;
+		is_fenomen = false;
+	}
+	else if (hotIZonenValue == 1)
+	{
+		is_humanoider = false;
+		is_monster = true;
+		is_fenomen = false;
+	}
+	else if (hotIZonenValue == 2)
+	{
+		is_humanoider = false;
+		is_monster = false;
+		is_fenomen = true;
+	}
+}
+///////////////////////////////////	HUMANOIDA HOT    	 /////////////////////////////
+void hotHumanoid()
+{
+	ImGui::TextWrapped(u8"humanoider är individer eller grupper av tänkande varelser.Slå T66 eller välj : ");
+
+	int size = ARRAY_SIZE(humanoider.text);
+	for (int i = 0; i < size; i++)
+		ImGui::RadioButton(&humanoider.text[i][0], &humanoider.value, i);
+
+	// SLUMPA KNAPP
+	if (ImGui::Button(u8"Slumpa värde", ImVec2(100, 30)))
+	{
+		int temp = diceRoll(2);
+		std::cout << temp << std::endl;
+		for (int i = 0; i < size; i++)
+		{
+			if (humanoider.range[0][i] <= temp && humanoider.range[1][i] >= temp)
+				humanoider.value = i;
+		}
+
+	}; ImGui::SameLine();
+	// NÄSTA KNAPP
+	if (ImGui::Button(u8"Fortsätt", ImVec2(100, 30)))
+	{
+		sektor_ruin = false;
+		sektor_rota = true;
+		rot();
+	}
+	ImGui::Text(u8"Vald humanoid är: ");
+	ImGui::SameLine(); ImGui::Text(&humanoider.text[humanoider.value][0]);
+}
+void hotMOnster()
+{
+	ImGui::TextWrapped(u8"MONSTER är sinnesslöa bestar som härjar i Zonens vidder.Vissa är muterade "
+		"versioner av nutidens djur, andra något helt främmande.Slå T66 eller välj : ");
+
+	int size = ARRAY_SIZE(monster.text);
+	for (int i = 0; i < size; i++)
+		ImGui::RadioButton(&monster.text[i][0], &monster.value, i);
+
+	// SLUMPA KNAPP
+	if (ImGui::Button(u8"Slumpa värde", ImVec2(100, 30)))
+	{
+		int temp = diceRoll(2);
+		std::cout << temp << std::endl;
+		for (int i = 0; i < size; i++)
+		{
+			if (monster.range[0][i] <= temp && monster.range[1][i] >= temp)
+				monster.value = i;
+		}
+
+	}; ImGui::SameLine();
+	// NÄSTA KNAPP
+	if (ImGui::Button(u8"Fortsätt", ImVec2(100, 30)))
+	{
+		sektor_ruin = false;
+		sektor_rota = true;
+		rot();
+	}
+	ImGui::Text(u8"Vald humanoid är: ");
+	ImGui::SameLine(); ImGui::Text(&monster.text[monster.value][0]);
+}
+void hotFenomen()
+{
+	/*for (int i = 0; i < ARRAY_SIZE(fenomen.text); i++)
+		ImGui::RadioButton(&fenomen.text[i][0], &fenomen.value, i);*/
 }

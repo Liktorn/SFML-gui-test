@@ -44,5 +44,17 @@
     <ClInclude Include="Enviroment.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IndustriRuin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StandardRuin.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Humanoider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Monster.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
